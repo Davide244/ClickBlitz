@@ -7,6 +7,7 @@
 #include <string>
 
 #include <CommCtrl.h>
+#include <Uxtheme.h>
 #include "Utils.hpp"
 
 #define MAINWINDOWCLASSNAME L"MainWindow"
@@ -58,6 +59,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     CheckForOtherInstances();
+
+	// Check windows version. If we are in Windows XP or below, disable visual styles
+	OSVERSIONINFOEX osvi;
+	DWORDLONG dwlConditionMask = 0;
+	ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	osvi.dwMajorVersion = 6;
+	osvi.dwMinorVersion = 0;
+	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+    if (!VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask))
+    {
+        SetThemeAppProperties(0);
+    }
 
     INITCOMMONCONTROLSEX icc;
     icc.dwSize = sizeof(icc);
@@ -223,6 +238,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SetBkColor(hdcStatic, RGB(255, 255, 255));
         return (INT_PTR)StaticBackgroundBrush;
     }
+	case WM_CTLCOLORBTN:
+	{
+		HDC hdcStatic = (HDC)wParam;
+		SetTextColor(hdcStatic, RGB(0, 0, 0));
+		SetBkColor(hdcStatic, RGB(255, 255, 255));
+		return (INT_PTR)StaticBackgroundBrush;
+	}
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -588,4 +610,9 @@ void EnableGUIInputs(bool isEnabled)
     EnableWindow(ClickOptionsGroupBox, isEnabled);
     EnableWindow(WhatToClickGroupBox, isEnabled);
     EnableWindow(GetDlgItem(MainWindow, IDUI_STARTBTN), isEnabled);
+	// Disable/Enable minimize button
+	if (isEnabled == false)
+		SetWindowLong(MainWindow, GWL_STYLE, GetWindowLong(MainWindow, GWL_STYLE) & ~WS_MINIMIZEBOX);
+	else
+	    SetWindowLong(MainWindow, GWL_STYLE, GetWindowLong(MainWindow, GWL_STYLE) | WS_MINIMIZEBOX);
 }
